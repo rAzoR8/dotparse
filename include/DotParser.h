@@ -133,16 +133,29 @@ inline DotGraph DotParser::ParseFromString(const std::string& _sGraph)
 inline TAttributes DotParser::ParseAttributes(const std::string& _sAttribList)
 {
     TAttributes Attribs;
+    std::vector<std::string> sQuotes;
+    std::string sBody = hlx::get_body(_sAttribList, "[", "]");
+    static const std::string sToken("$DotParse$");
 
-    std::vector<std::string> KeyValues = hlx::split(hlx::get_body(_sAttribList, "[", "]"), ',');
-    
+    size_t uQuoteStart = 0u;
+    size_t uQuoteEnd = 0u;
+
+    while (hlx::get_body(sBody, uQuoteStart, uQuoteEnd, "\"", "\""))
+    {
+        sQuotes.emplace_back(sBody.substr(uQuoteStart + 1u, uQuoteEnd - uQuoteStart - 1u));
+        sBody.replace(uQuoteStart, uQuoteEnd - uQuoteStart + 1u, sToken);
+    }
+
+    std::vector<std::string> KeyValues = hlx::split(sBody, ',');    
     std::vector<std::string> KeyValue;
+    size_t uQuote = 0;
+
     for (const std::string& KV : KeyValues)
     {
         KeyValue = hlx::split(KV, '=');
         if (KeyValue.size() == 2u)
         {
-            Attribs[hlx::trim(KeyValue[0])] = hlx::trim(KeyValue[1]);
+            Attribs[hlx::trim(KeyValue[0])] = hlx::trim(hlx::contains(KeyValue[1], sToken) ? sQuotes[uQuote++] : KeyValue[1]);
         }
     }
 
