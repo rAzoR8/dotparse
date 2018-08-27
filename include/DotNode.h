@@ -4,7 +4,21 @@
 #include <unordered_map>
 #include <string>
 
-using TAttributes = std::unordered_map<std::string, std::string>;
+class TAttributes : public std::unordered_map<std::string, std::string>
+{
+public:
+    bool HasValue(const std::string& _sKey, const std::string& _sValue) const
+    {
+        const auto it = find(_sKey);
+        return it != end() && it->second == _sValue;
+    }
+
+    std::string GetValue(const std::string& _sKey) const
+    {
+        const auto it = find(_sKey);
+        return it != end() ? it->second : "";
+    }
+};
 
 class DotNode
 {
@@ -44,7 +58,7 @@ public:
         return this;
     }
 
-    DotNode*  SetAttribute(const std::string& _sKey, const std::string& _sValue, const bool _bOverride = false)
+    DotNode* SetAttribute(const std::string& _sKey, const std::string& _sValue, const bool _bOverride = false)
     {
         if (_bOverride || m_Attributes.count(_sKey) == 0u)
         {
@@ -56,7 +70,6 @@ public:
     const std::string& GetName() const { return m_sName; }
     const TAttributes& GetAttributes() const { return m_Attributes; }
     const std::vector<Successor>& GetSuccessors() const { return m_Successors; }
-
 private:
     std::string m_sName;
 

@@ -6,6 +6,8 @@
 class DotGraph
 {
 public:
+    using Nodes = std::vector<DotNode>;
+
     DotGraph(const std::string& _sName = {}, const size_t _uSize = 128u) :
         m_sName(_sName) { m_Nodes.reserve(_uSize); };
 
@@ -45,15 +47,21 @@ public:
         return pNode;
     }
 
-    const std::vector<DotNode>& GetNodes() const { return m_Nodes; }
-    std::vector<DotNode>& GetNodes() { return m_Nodes; }
+    const Nodes& GetNodes() const { return m_Nodes; }
+    Nodes& GetNodes() { return m_Nodes; }
+
+    typename Nodes::iterator begin() noexcept { return m_Nodes.begin(); }
+    typename Nodes::iterator end() noexcept { return m_Nodes.end(); }
+
+    typename Nodes::const_iterator begin() const noexcept { return m_Nodes.begin(); }
+    typename Nodes::const_iterator end() const noexcept { return m_Nodes.end(); }
 
     const std::string& GetName() const { return m_sName; }
     void SetName(const std::string& _sName) { m_sName = _sName; }
 
 private:
     std::string m_sName;
-    std::vector<DotNode> m_Nodes;
+    Nodes m_Nodes;
     // name -> node
     std::unordered_map<std::string, DotNode*> m_NodeMap;
 };
