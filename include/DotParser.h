@@ -4,14 +4,8 @@
 #include "DotGraph.h"
 
 #include <fstream>
-#include <unordered_set>
 
-static const std::vector<std::string> GraphTypes = { "graph", "digraph" };
-static const std::vector<std::string> EdgeTypes = { "--", "->" };
-static const std::unordered_set<std::string> GraphKeywords = { "node" };
 static const std::vector<std::string> StatementSeparators = { ";","\r\n", "\n" };
-
-inline bool IsGraphKeyword(const std::string& _sKeyword) { return GraphKeywords.count(_sKeyword) != 0; }
 
 class DotParser
 {
@@ -19,14 +13,14 @@ public:
     DotParser() {};
     ~DotParser() {};
 
-    static DotGraph ParseFromFile(const std::string& _sGraph);
+    static DotGraph ParseFromFile(const std::string& _sGraph, const bool _bApplyGlobalAttributesToNodes = true);
 
-    static DotGraph ParseFromString(const std::string& _sGraph);
+    static DotGraph ParseFromString(const std::string& _sGraph, const bool _bApplyGlobalAttributesToNodes = true);
 
     static TAttributes ParseAttributes(const std::string& _sAttribList);
 };
 
-inline DotGraph DotParser::ParseFromFile(const std::string& _sGraphFile)
+inline DotGraph DotParser::ParseFromFile(const std::string& _sGraphFile, const bool _bApplyGlobalAttributesToNodes)
 {
     std::ifstream file(_sGraphFile);
 
@@ -35,13 +29,13 @@ inline DotGraph DotParser::ParseFromFile(const std::string& _sGraphFile)
         const std::string sGraph((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         file.close();
 
-        return ParseFromString(sGraph);
+        return ParseFromString(sGraph, _bApplyGlobalAttributesToNodes);
     }
 
     return DotGraph();
 }
 
-inline DotGraph DotParser::ParseFromString(const std::string& _sGraph)
+inline DotGraph DotParser::ParseFromString(const std::string& _sGraph, const bool _bApplyGlobalAttributesToNodes)
 {
     DotGraph graph;
 
@@ -58,6 +52,7 @@ inline DotGraph DotParser::ParseFromString(const std::string& _sGraph)
     size_t uGraphType = 0u;
     if (size_t uGraphDesc = hlx::find_first_of(_sGraph, GraphTypes, uGraphType); uGraphDesc != std::string::npos)
     {
+        graph.SetType(static_cast<EGraphType>(uGraphType));
         const size_t uNameStart = uGraphDesc + GraphTypes[uGraphType].size() + 1u;
         const std::string sGraphName = _sGraph.substr(uNameStart, uStart - uNameStart);
         graph.SetName(hlx::trim(sGraphName));
@@ -66,8 +61,6 @@ inline DotGraph DotParser::ParseFromString(const std::string& _sGraph)
     {
         return graph;
     }
-
-    TAttributes GlobalNodeAttributes;
 
     // parse statements
     const std::vector<std::string> Statements = hlx::split(_sGraph, StatementSeparators, uStart + 1u, uEnd);
@@ -89,15 +82,9 @@ inline DotGraph DotParser::ParseFromString(const std::string& _sGraph)
         {
             const std::string sNodeName = hlx::trim(sStatementBody);
 
-            if (IsGraphKeyword(sNodeName))
+            if (IsGlobalAttrib(sNodeName))
             {
-                if (sNodeName == "node")
-                {
-                    for (const auto&[k, v] : Attributes)
-                    {
-                        GlobalNodeAttributes[k] = v;
-                    }
-                }
+                graph.GetGlobalAttributes()[sNodeName] = Attributes;
             }
             else
             {
@@ -119,12 +106,9 @@ inline DotGraph DotParser::ParseFromString(const std::string& _sGraph)
         }        
     }
 
-    for (const auto&[k, v] : GlobalNodeAttributes)
+    if (_bApplyGlobalAttributesToNodes) 
     {
-        for (DotNode& node : graph.GetNodes())
-        {
-            node.SetAttribute(k, v, false);
-        }
+        graph.ApplyGlobalNodeAttributes();  
     }
 
     return graph;
