@@ -80,28 +80,33 @@ inline DotGraph DotParser::ParseFromString(const std::string& _sGraph, const boo
         
         if (EdgesNodes.size() <= 1u)
         {
-            const std::string sNodeName = hlx::trim(sStatementBody);
-
-            if (IsGlobalAttrib(sNodeName))
+            if (const std::string sNodeName = hlx::trim(sStatementBody); sNodeName.empty() == false)            
             {
-                graph.GetGlobalAttributes()[sNodeName] = Attributes;
-            }
-            else
-            {
-                graph.AddNode(sNodeName)->AddAttributes(Attributes);
+                if (IsGlobalAttrib(sNodeName))
+                {
+                    graph.GetGlobalAttributes()[sNodeName] = Attributes;
+                }
+                else
+                {
+                    graph.AddNode(sNodeName)->AddAttributes(Attributes);
+                }
             }
         }
         else
         {
-            std::string sNodeName = hlx::trim(EdgesNodes.front());
-            DotNode* pPrevNode = graph.AddNode(sNodeName);
-
-            for (size_t i = 1u; i < EdgesNodes.size(); ++i)
+            if (std::string sNodeName = hlx::trim(EdgesNodes.front()); sNodeName.empty() == false)
             {
-                sNodeName = hlx::trim(EdgesNodes[i]);
-                DotNode* pNode = graph.AddNode(sNodeName);
-                pPrevNode->AddSuccessor(pNode, Attributes);
-                pPrevNode = pNode;
+                DotNode* pPrevNode = graph.AddNode(sNodeName);
+                for (size_t i = 1u; i < EdgesNodes.size(); ++i)
+                {
+                    sNodeName = hlx::trim(EdgesNodes[i]);
+                    if (sNodeName.empty() == false)
+                    {
+                        DotNode* pNode = graph.AddNode(sNodeName);
+                        pPrevNode->AddSuccessor(pNode, Attributes);
+                        pPrevNode = pNode;
+                    }
+                }
             }
         }        
     }
